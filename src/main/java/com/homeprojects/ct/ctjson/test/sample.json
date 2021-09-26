@@ -1,0 +1,17 @@
+{
+	"name": "John",
+	"age": 40,
+	"addresses": [
+		{
+			"city": "NY",
+			"country": "US",
+			"pin": 30400
+		},
+		{
+			"city": "MUMBAI",
+			"country": "India",
+			"pin": 1263
+		}
+	],
+	"alias": ["Sam", "Tom", "Jack"]
+}
