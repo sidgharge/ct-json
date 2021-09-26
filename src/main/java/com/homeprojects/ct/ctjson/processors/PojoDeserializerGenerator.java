@@ -1,11 +1,15 @@
 package com.homeprojects.ct.ctjson.processors;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.tools.Diagnostic.Kind;
 
 import com.homeprojects.ct.ctjson.PojoMetadata;
 import com.homeprojects.ct.ctjson.Property;
@@ -15,6 +19,7 @@ import com.homeprojects.ct.ctjson.core.JsonNode;
 import com.homeprojects.ct.ctjson.core.deserializer.Deserializer;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.CodeBlock.Builder;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
@@ -88,9 +93,10 @@ public class PojoDeserializerGenerator {
 
 	private CodeBlock getDeserializeMethodBody() {
 		CodeBlock.Builder builder = CodeBlock.builder();
-		if(metadata.isIterable()) {
-			return builder.build();
-		}
+//		if(metadata.isIterable()) {
+////			handleIterableType(builder);
+//			return builder.build();
+//		}
 		builder.addStatement("$T node = (JsonNode) element", JsonNode.class);
 		builder.addStatement("$T object = new $T()", metadata.getElement(), metadata.getElement());
 		
@@ -98,6 +104,8 @@ public class PojoDeserializerGenerator {
 			TypeKind kind = property.getField().asType().getKind();
 			if(kind.isPrimitive()) {
 				builder.addStatement(getPrimitiveDeserializeStatement(property, kind));
+			} else if (property.isIterable()) {
+				handleIterableProperty(property, builder);
 			} else {
 				String propertyName = property.getField().getSimpleName().toString();
 				builder.addStatement("object.$L(mapper.deserialize(node.getValue($S), $T.class))", property.getSetterMethodName(), propertyName, property.getField());
@@ -107,6 +115,25 @@ public class PojoDeserializerGenerator {
 		return builder.build();
 	}
 
+	private void handleIterableProperty(Property property, CodeBlock.Builder builder) {
+		TypeMirror type = property.getField().asType();
+		if(!(type instanceof DeclaredType)) {
+			return;
+		}
+
+		DeclaredType dt = (DeclaredType) type;
+		List<? extends TypeMirror> arguments = dt.getTypeArguments();
+		if(arguments.isEmpty()) {
+			return;
+		}
+		
+		TypeMirror containerType = env.getTypeUtils().erasure(type);
+		TypeMirror elementType = arguments.get(0);
+		String propertyName = property.getField().getSimpleName().toString();
+		builder.addStatement("object.$L(mapper.deserializeArray(node.getValue($S), $T.class, $T.class))", property.getSetterMethodName(), propertyName, containerType, elementType);
+	}
+
+	// TODO include other primitives
 	private CodeBlock getPrimitiveDeserializeStatement(Property property, TypeKind kind) {
 		String propertyName = property.getField().getSimpleName().toString();
 		String methodName = null;

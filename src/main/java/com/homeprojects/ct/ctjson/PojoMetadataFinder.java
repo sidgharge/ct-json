@@ -49,9 +49,15 @@ public class PojoMetadataFinder {
 		return metadata;
 	}
 
-	private boolean isIterable(TypeElement element) {
+	private boolean isIterable(Element element) {
 		TypeMirror t1 = element.asType();
+		
+		if(t1.getKind().isPrimitive()) {
+			return false;
+		}
+		t1 = processingEnv.getTypeUtils().erasure(t1);
 		TypeMirror t2 = processingEnv.getElementUtils().getTypeElement(Iterable.class.getName()).asType();
+		t2 = processingEnv.getTypeUtils().erasure(t2);
 		return processingEnv.getTypeUtils().isAssignable(t1, t2);
 	}
 	
@@ -61,6 +67,8 @@ public class PojoMetadataFinder {
 		}
 		VariableElement property = (VariableElement) enclosedField;
 		String fieldName = property.getSimpleName().toString();
+		
+		boolean isIterable = isIterable(enclosedField);
 		
 		List<String> possibleSetterNames = new ArrayList<>();
 		possibleSetterNames.add(getAccessorName("set", fieldName));
@@ -81,7 +89,7 @@ public class PojoMetadataFinder {
 		for (Element enclosedMethodElement : element.getEnclosedElements()) {
 			if(isMethodSetter(enclosedMethodElement, enclosedField, possibleSetterNames)) {
 				String methodName = enclosedMethodElement.getSimpleName().toString();
-				metadata.addProperty(new Property(property, methodName));
+				metadata.addProperty(new Property(property, isIterable, methodName));
 			}
 		}
 	}
@@ -95,7 +103,7 @@ public class PojoMetadataFinder {
 		if(parameters.size() != 1) {
 			return false;
 		}
-		if(!parameters.get(0).asType().equals(enclosedField.asType())) {
+		if(!processingEnv.getTypeUtils().isSameType(parameters.get(0).asType(), enclosedField.asType())) {
 			return false;
 		}
 		
@@ -104,9 +112,6 @@ public class PojoMetadataFinder {
 	}
 	
 	private boolean isBooleanType(VariableElement property) {
-//		TypeMirror type = property.asType();
-//		TypeMirror type2 = processingEnv.getElementUtils().getTypeElement(boolean.class.getName()).asType();
-		
 		return property.asType().getKind().equals(TypeKind.BOOLEAN);
 	}
 
