@@ -12,11 +12,12 @@ import javax.lang.model.type.TypeMirror;
 
 import com.homeprojects.ct.ctjson.PojoMetadata;
 import com.homeprojects.ct.ctjson.Property;
-import com.homeprojects.ct.ctjson.annotations.GeneratedDeserialzer;
+import com.homeprojects.ct.ctjson.annotations.GeneratedSerialzer;
 import com.homeprojects.ct.ctjson.core.JsonElement;
+import com.homeprojects.ct.ctjson.core.JsonKeyValue;
 import com.homeprojects.ct.ctjson.core.JsonMapper;
 import com.homeprojects.ct.ctjson.core.JsonNode;
-import com.homeprojects.ct.ctjson.core.deserializer.AbstractDeserializer;
+import com.homeprojects.ct.ctjson.core.serializer.AbstractSerializer;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
@@ -27,13 +28,13 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
-public class PojoDeserializerGenerator {
+public class PojoSerializerGenerator {
 
 	private final PojoMetadata metadata;
 	
 	private final ProcessingEnvironment env;
 	
-	public PojoDeserializerGenerator(PojoMetadata metadata, ProcessingEnvironment env) {
+	public PojoSerializerGenerator(PojoMetadata metadata, ProcessingEnvironment env) {
 		this.metadata = metadata;
 		this.env = env;
 	}
@@ -42,14 +43,15 @@ public class PojoDeserializerGenerator {
 		String className = getClassName();
 		TypeSpec.Builder builder = TypeSpec.
 				classBuilder(className)
-				.addAnnotation(GeneratedDeserialzer.class)
+				.addAnnotation(GeneratedSerialzer.class)
 				.addModifiers(Modifier.PUBLIC)
-				//.addSuperinterface(getSuperInterface())
 				.superclass(getSuperClass())
-//				.addField(getMapperField())
-//				.addMethod(getConstructor())
-				.addMethod(getDeserializeMethod())
+				.addMethod(getSerializeMethod())
 				.addMethod(getGetTypeMethod());
+		
+		for (Property property : metadata.getProperties()) {
+			builder.addMethod(getMethodForSettingPair(property));
+		}
 		
 		JavaFile file = JavaFile.builder(getPackage(), builder.build()).build();
 
@@ -60,12 +62,38 @@ public class PojoDeserializerGenerator {
 		}
 	}
 
+	private MethodSpec getMethodForSettingPair(Property property) {
+		TypeName type = TypeName.get(metadata.getElement().asType());
+		return MethodSpec.methodBuilder(property.getField().getSimpleName().toString())
+			.addModifiers(Modifier.PRIVATE)
+			.returns(void.class)
+			.addParameter(ParameterSpec.builder(type, "object").build())
+			.addParameter(ParameterSpec.builder(JsonNode.class, "node").build())
+			.addCode(getSettingPairBody(property))
+			.build();
+	}
+
+	private CodeBlock getSettingPairBody(Property property) {
+		CodeBlock.Builder builder = CodeBlock.builder();
+		builder.addStatement("$T pair = new $T()", JsonKeyValue.class, JsonKeyValue.class);
+		builder.addStatement("pair.setKey($S)", property.getField().getSimpleName().toString());
+		
+		TypeKind kind = property.getField().asType().getKind();
+		if(kind.isPrimitive()) {
+			builder.addStatement(getPrimitiveSerializeStatement(property, kind));
+		} else {
+			builder.addStatement("pair.setValue(mapper.serialize(object.$L()))", property.getGetterMethodName());
+		}
+		
+		builder.addStatement("node.addPair(pair)");
+		return builder.build();
+	}
+
 	private MethodSpec getGetTypeMethod() {
-		ParameterizedTypeName returnType = ParameterizedTypeName.get(ClassName.get(Class.class), TypeName.get(metadata.getElement().asType()));
 		return MethodSpec.methodBuilder("getType")
 			.addAnnotation(Override.class)
 			.addModifiers(Modifier.PUBLIC)
-			.returns(returnType)
+			.returns(Class.class)
 			.addStatement("return $T.class", metadata.getElement())
 			.build();
 	}
@@ -93,37 +121,25 @@ public class PojoDeserializerGenerator {
 			.build();
 	}
 
-	private MethodSpec getDeserializeMethod() {
-		return MethodSpec.methodBuilder("deserialize")
+	private MethodSpec getSerializeMethod() {
+		return MethodSpec.methodBuilder("serialize")
 			.addAnnotation(Override.class)
 			.addModifiers(Modifier.PUBLIC)
-			.returns(TypeName.get(metadata.getElement().asType()))
-			.addParameter(ParameterSpec.builder(JsonElement.class, "element").build())
-			.addCode(getDeserializeMethodBody())
+			.returns(JsonElement.class)
+			.addParameter(ParameterSpec.builder(TypeName.get(metadata.getElement().asType()), "object").build())
+			.addCode(getSerializeMethodBody())
 			.build();
 	}
 
-	private CodeBlock getDeserializeMethodBody() {
+	private CodeBlock getSerializeMethodBody() {
 		CodeBlock.Builder builder = CodeBlock.builder();
-//		if(metadata.isIterable()) {
-////			handleIterableType(builder);
-//			return builder.build();
-//		}
-		builder.addStatement("$T node = (JsonNode) element", JsonNode.class);
-		builder.addStatement("$T object = new $T()", metadata.getElement(), metadata.getElement());
+		builder.addStatement("$T node = new JsonNode()", JsonNode.class);
 		
 		for (Property property: metadata.getProperties()) {
-			TypeKind kind = property.getField().asType().getKind();
-			if(kind.isPrimitive()) {
-				builder.addStatement(getPrimitiveDeserializeStatement(property, kind));
-			} else if (property.isIterable()) {
-				handleIterableProperty(property, builder);
-			} else {
-				String propertyName = property.getField().getSimpleName().toString();
-				builder.addStatement("object.$L(mapper.deserialize(node.getValue($S), $T.class))", property.getSetterMethodName(), propertyName, property.getField());
-			}
+			String propertyName = property.getField().getSimpleName().toString();
+			builder.addStatement("$L(object, node)", propertyName);
 		}
-		builder.addStatement("return object");
+		builder.addStatement("return node");
 		return builder.build();
 	}
 
@@ -146,29 +162,27 @@ public class PojoDeserializerGenerator {
 	}
 
 	// TODO include other primitives
-	private CodeBlock getPrimitiveDeserializeStatement(Property property, TypeKind kind) {
-		String propertyName = property.getField().getSimpleName().toString();
+	private CodeBlock getPrimitiveSerializeStatement(Property property, TypeKind kind) {
 		String methodName = null;
 		if(kind.equals(TypeKind.INT)) {
-			methodName = "deserializeAsInt";
+			methodName = "serializeInt";
 		} else if(kind.equals(TypeKind.BYTE)) {
-			methodName = "deserializeAsByte";
+			methodName = "serializeByte";
 		} else if(kind.equals(TypeKind.BOOLEAN)) {
-			methodName = "deserializeAsBoolean";
+			methodName = "serializeBoolean";
 		}
-		return CodeBlock.of("object.$L(mapper.$L(node.getValue($S)))", property.getSetterMethodName(), methodName, propertyName);
+		return CodeBlock.of("pair.setValue(mapper.$L(object.$L()))", methodName, property.getGetterMethodName());
 	}
 
 	private TypeName getSuperClass() {
 		TypeName type = TypeName.get(metadata.getElement().asType());
 		return ParameterizedTypeName.get(
-				ClassName.get(AbstractDeserializer.class),
-				ClassName.get(JsonElement.class),
+				ClassName.get(AbstractSerializer.class),
 				type
 		);
 	}
 
 	private String getClassName() {
-		return metadata.getElement().getSimpleName().toString() + "GeneratedDeserializer";
+		return metadata.getElement().getSimpleName().toString() + "GeneratedSerializer";
 	}
 }

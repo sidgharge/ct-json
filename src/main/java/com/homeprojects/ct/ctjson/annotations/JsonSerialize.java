@@ -9,6 +9,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(TYPE)
-public @interface JsonDeserialize {
+public @interface JsonSerialize {
 
 }

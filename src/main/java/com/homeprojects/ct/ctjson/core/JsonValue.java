@@ -14,6 +14,10 @@ public class JsonValue implements JsonElement {
 	public String getValue() {
 		return value;
 	}
+	
+	public JsonValueType getType() {
+		return type;
+	}
 
 	@Override
 	public String toString() {

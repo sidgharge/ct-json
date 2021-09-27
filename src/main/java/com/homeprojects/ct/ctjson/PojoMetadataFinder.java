@@ -70,28 +70,47 @@ public class PojoMetadataFinder {
 		
 		boolean isIterable = isIterable(enclosedField);
 		
+		List<String> possibleSetterNames = getSetterNames(property, fieldName);
+		List<String> possibleGetterNames = getGetterNames(property, fieldName);
+		
+		Property prop = new Property(property, isIterable);
+		metadata.addProperty(prop);
+		for (Element enclosedMethodElement : element.getEnclosedElements()) {
+			if(isMethodSetter(enclosedMethodElement, enclosedField, possibleSetterNames)) {
+				String methodName = enclosedMethodElement.getSimpleName().toString();
+				prop.setSetterMethodName(methodName);
+			} else if(isMethodGetter(enclosedMethodElement, enclosedField, possibleGetterNames)) {
+				String methodName = enclosedMethodElement.getSimpleName().toString();
+				prop.setGetterMethodName(methodName);
+			}
+		}
+	}
+
+	private List<String> getSetterNames(VariableElement property, String fieldName) {
 		List<String> possibleSetterNames = new ArrayList<>();
 		possibleSetterNames.add(getAccessorName("set", fieldName));
 		
 		if(isBooleanType(property)) {
-			// Getter logic
-//			if(fieldName.startsWith("is")) {
-//				possibleSetterNames.add(fieldName);
-//			} else {
-//				possibleSetterNames.add(getGetterName("is", fieldName));
-//			}
 			if(fieldName.startsWith("is") && fieldName.length() > 2) {
-				String str = "set" + fieldName.substring(2);
+				String str = getAccessorName("set", fieldName.substring(2));
 				possibleSetterNames.add(str);
 			}
 		}
-		
-		for (Element enclosedMethodElement : element.getEnclosedElements()) {
-			if(isMethodSetter(enclosedMethodElement, enclosedField, possibleSetterNames)) {
-				String methodName = enclosedMethodElement.getSimpleName().toString();
-				metadata.addProperty(new Property(property, isIterable, methodName));
+		return possibleSetterNames;
+	}
+	
+	private List<String> getGetterNames(VariableElement property, String fieldName) {
+		List<String> possibleSetterNames = new ArrayList<>();
+		possibleSetterNames.add(getAccessorName("get", fieldName));
+		if(isBooleanType(property)) {
+			if(!fieldName.startsWith("is")) {
+				String str = getAccessorName("is", fieldName);
+				possibleSetterNames.add(str);
+			} else {
+				possibleSetterNames.add(fieldName);
 			}
 		}
+		return possibleSetterNames;
 	}
 	
 	private boolean isMethodSetter(Element enclosedMethodElement, Element enclosedField, List<String> possibleSetterNames) {
@@ -104,6 +123,23 @@ public class PojoMetadataFinder {
 			return false;
 		}
 		if(!processingEnv.getTypeUtils().isSameType(parameters.get(0).asType(), enclosedField.asType())) {
+			return false;
+		}
+		
+		return possibleSetterNames.stream()
+			.anyMatch(gn -> gn.equals(enclosedMethod.getSimpleName().toString()));
+	}
+	
+	private boolean isMethodGetter(Element enclosedMethodElement, Element enclosedField, List<String> possibleSetterNames) {
+		if(!enclosedMethodElement.getKind().equals(ElementKind.METHOD)) {
+			return false;
+		}
+		ExecutableElement enclosedMethod = (ExecutableElement) enclosedMethodElement;
+		List<? extends VariableElement> parameters = enclosedMethod.getParameters();
+		if(!parameters.isEmpty()) {
+			return false;
+		}
+		if(!processingEnv.getTypeUtils().isSameType(enclosedMethod.getReturnType(), enclosedField.asType())) {
 			return false;
 		}
 		
