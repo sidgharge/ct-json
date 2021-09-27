@@ -36,6 +36,12 @@
 			<version>2.12.5</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.homeprojects</groupId>
+			<artifactId>dependency-injection</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

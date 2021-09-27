@@ -9,17 +9,17 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.tools.Diagnostic.Kind;
 
 import com.homeprojects.ct.ctjson.PojoMetadata;
 import com.homeprojects.ct.ctjson.Property;
+import com.homeprojects.ct.ctjson.annotations.GeneratedDeserialzer;
 import com.homeprojects.ct.ctjson.core.JsonElement;
 import com.homeprojects.ct.ctjson.core.JsonMapper;
 import com.homeprojects.ct.ctjson.core.JsonNode;
+import com.homeprojects.ct.ctjson.core.deserializer.AbstractDeserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.Deserializer;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.CodeBlock.Builder;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
@@ -43,11 +43,14 @@ public class PojoDeserializerGenerator {
 		String className = getClassName();
 		TypeSpec.Builder builder = TypeSpec.
 				classBuilder(className)
+				.addAnnotation(GeneratedDeserialzer.class)
 				.addModifiers(Modifier.PUBLIC)
-				.addSuperinterface(getSuperInterface())
-				.addField(getMapperField())
-				.addMethod(getConstructor())
-				.addMethod(getDeserializeMethod());
+				//.addSuperinterface(getSuperInterface())
+				.superclass(getSuperClass())
+//				.addField(getMapperField())
+//				.addMethod(getConstructor())
+				.addMethod(getDeserializeMethod())
+				.addMethod(getGetTypeMethod());
 		
 		JavaFile file = JavaFile.builder(getPackage(), builder.build()).build();
 
@@ -56,6 +59,16 @@ public class PojoDeserializerGenerator {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	private MethodSpec getGetTypeMethod() {
+		ParameterizedTypeName returnType = ParameterizedTypeName.get(ClassName.get(Class.class), TypeName.get(metadata.getElement().asType()));
+		return MethodSpec.methodBuilder("getType")
+			.addAnnotation(Override.class)
+			.addModifiers(Modifier.PUBLIC)
+			.returns(returnType)
+			.addStatement("return $T.class", metadata.getElement())
+			.build();
 	}
 
 	private String getPackage() {
@@ -147,10 +160,10 @@ public class PojoDeserializerGenerator {
 		return CodeBlock.of("object.$L(mapper.$L(node.getValue($S)))", property.getSetterMethodName(), methodName, propertyName);
 	}
 
-	private TypeName getSuperInterface() {
+	private TypeName getSuperClass() {
 		TypeName type = TypeName.get(metadata.getElement().asType());
 		return ParameterizedTypeName.get(
-				ClassName.get(Deserializer.class),
+				ClassName.get(AbstractDeserializer.class),
 				ClassName.get(JsonElement.class),
 				type
 		);
