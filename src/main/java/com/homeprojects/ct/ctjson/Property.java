@@ -1,10 +1,13 @@
 package com.homeprojects.ct.ctjson;
 
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
 
 public class Property {
 
 	private final VariableElement field;
+	
+	private final TypeMirror erasedType;
 	
 	private final boolean isIterable;
 
@@ -12,8 +15,9 @@ public class Property {
 	
 	private String getterMethodName;
 
-	public Property(VariableElement field, boolean isIterable) {
+	public Property(VariableElement field, TypeMirror erasedType, boolean isIterable) {
 		this.field = field;
+		this.erasedType = erasedType;
 		this.isIterable = isIterable;
 	}
 
@@ -41,5 +45,7 @@ public class Property {
 		this.setterMethodName = setterMethodName;
 	}
 	
-	
+	public TypeMirror getErasedType() {
+		return erasedType;
+	}
 }

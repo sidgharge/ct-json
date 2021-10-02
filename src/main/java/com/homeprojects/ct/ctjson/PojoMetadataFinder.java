@@ -41,6 +41,8 @@ public class PojoMetadataFinder {
 		PojoMetadata metadata = new PojoMetadata();
 		metadata.setIterable(isIterable(element));
 		metadata.setElement(element);
+		TypeMirror erasedType = processingEnv.getTypeUtils().erasure(element.asType());
+		metadata.setErasedType(erasedType);
 		
 		List<? extends Element> enclosedElements = element.getEnclosedElements();
 		for (Element enclosedField : enclosedElements) {
@@ -73,7 +75,8 @@ public class PojoMetadataFinder {
 		List<String> possibleSetterNames = getSetterNames(property, fieldName);
 		List<String> possibleGetterNames = getGetterNames(property, fieldName);
 		
-		Property prop = new Property(property, isIterable);
+		TypeMirror erasedType = processingEnv.getTypeUtils().erasure(property.asType());
+		Property prop = new Property(property, erasedType, isIterable);
 		metadata.addProperty(prop);
 		for (Element enclosedMethodElement : element.getEnclosedElements()) {
 			if(isMethodSetter(enclosedMethodElement, enclosedField, possibleSetterNames)) {

@@ -4,12 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
 
 public class PojoMetadata {
 
 	private boolean isIterable = true;
-	
+
 	private TypeElement element;
+
+	private TypeMirror erasedType;
 
 	private final List<Property> properties = new ArrayList<>();
 
@@ -32,8 +35,17 @@ public class PojoMetadata {
 	public void setElement(TypeElement element) {
 		this.element = element;
 	}
-	
+
 	public TypeElement getElement() {
 		return element;
 	}
+
+	public TypeMirror getErasedType() {
+		return erasedType;
+	}
+
+	public void setErasedType(TypeMirror erasedType) {
+		this.erasedType = erasedType;
+	}
+
 }
