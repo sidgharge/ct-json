@@ -144,20 +144,22 @@ public class PojoDeserializerGenerator {
 	}
 	
 	private CodeBlock getPrimitiveCode(Property property, TypeKind kind) {
-		if(kind.equals(TypeKind.INT)) {
+		switch (kind) {
+		case INT:
 			return CodeBlock.of("parser.toInt(parser.getNextNumber())");
-		} else if(kind.equals(TypeKind.SHORT)) {
+		case SHORT:
 			return CodeBlock.of("parser.toShort(parser.getNextNumber())");
-		} else if(kind.equals(TypeKind.BYTE)) {
+		case BYTE:
 			return CodeBlock.of("parser.toByte(parser.getNextNumber())");
-		} else if(kind.equals(TypeKind.DOUBLE)) {
+		case DOUBLE:
 			return CodeBlock.of("parser.toDouble(parser.getNextNumber())");
-		} else if(kind.equals(TypeKind.FLOAT)) {
+		case FLOAT:
 			return CodeBlock.of("parser.toFloat(parser.getNextNumber())");
-		} else if(kind.equals(TypeKind.BOOLEAN)) {
+		case BOOLEAN:
 			return CodeBlock.of("parser.getNextBoolean()");
+		default:
+			return CodeBlock.builder().build();
 		}
-		return CodeBlock.builder().build(); // TODO Handle all cases
 	}
 
 
