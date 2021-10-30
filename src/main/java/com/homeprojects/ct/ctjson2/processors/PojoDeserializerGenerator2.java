@@ -15,7 +15,7 @@ import com.homeprojects.ct.ctjson.Property;
 import com.homeprojects.ct.ctjson.annotations.GeneratedDeserialzer;
 import com.homeprojects.ct.ctjson2.core.JsonMapper2;
 import com.homeprojects.ct.ctjson2.core.JsonParser2;
-import com.homeprojects.ct.ctjson2.core.deserializer.Deserializer;
+import com.homeprojects.ct.ctjson2.core.deserializer.Deserializer2;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
@@ -143,7 +143,14 @@ public class PojoDeserializerGenerator2 {
 //			System.out.println(propertyType);deserializeGenericObject
 			builder.add("deserializeGenericObject()");
 		} else {
-			builder.add("deserialize($T.class)", env.getTypeUtils().erasure(propertyType));
+			CodeBlock.Builder argsBuilder = CodeBlock.builder();
+			if(propertyType instanceof DeclaredType) {
+				DeclaredType dclt = (DeclaredType) propertyType;
+				List<? extends TypeMirror> arguments = dclt.getTypeArguments();
+				
+				arguments.stream().forEach(argument -> argsBuilder.add(", $T.class", argument));
+			}
+			builder.add("deserialize($T.class $L)", env.getTypeUtils().erasure(propertyType), argsBuilder.build());
 		}
 		return builder.build();
 	}
@@ -193,7 +200,7 @@ public class PojoDeserializerGenerator2 {
 	private TypeName getSuperClass() {
 		TypeName type = TypeName.get(metadata.getErasedType());
 		return ParameterizedTypeName.get(
-				ClassName.get(Deserializer.class),
+				ClassName.get(Deserializer2.class),
 				type
 		);
 	}

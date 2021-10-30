@@ -1,9 +1,6 @@
 package com.homeprojects.ct.ctjson2.core;
 
-import java.util.Arrays;
-import java.util.List;
-
-import com.homeprojects.ct.ctjson2.core.deserializer.Deserializer;
+import com.homeprojects.ct.ctjson2.core.deserializer.Deserializer2;
 
 @SuppressWarnings("rawtypes")
 public class JsonParser2 {
@@ -12,17 +9,22 @@ public class JsonParser2 {
 
 	private int i;
 	
-	private JsonMapper2 mapper;
+//	private JsonMapper2 mapper;
+	
+	private Type type;
 
-	private List<Class> genericTypes;
-	
-	private int genericIndex = 0;
-	
-	public JsonParser2(String json, JsonMapper2 mapper, Class... genericTypes) {
+	public JsonParser2(String json, JsonMapper2 mapper, Type type) {
 		this.json = json;
 		this.i = 0;
-		this.mapper = mapper;
-		this.genericTypes = Arrays.asList(genericTypes);
+//		this.mapper = mapper;
+		this.type = type;
+	}
+	
+	private JsonParser2(String json, JsonMapper2 mapper, Type type, int i) {
+		this.json = json;
+		this.i = i;
+//		this.mapper = mapper;
+		this.type = type;
 	}
 
 	public char getNextCharacter() {
@@ -142,29 +144,10 @@ public class JsonParser2 {
 			}
 			c = getCharacter();
 		}
-		getNextCharacter();
-	}
-
-	public <U> U deserialize(Class<U> clazz) {
-		Deserializer deserializer = mapper.getDeserializer(clazz);
-		return (U) deserializer.deserialize(json, this);
+		getNextCharacter();   
 	}
 	
-	public Object deserializeGenericObject() {
-		Deserializer deserializer = mapper.getDeserializer(genericTypes.get(genericIndex++));
-		return deserializer.deserialize(json, this);
-	}
-
-	public Object getNextGenericElement() {
-		Deserializer deserializer = mapper.getDeserializer(genericTypes.get(genericIndex));
-		return deserializer.deserialize(json, this);
-	}
-	
-	public void incrementGenericIndex() {
-		genericIndex++;
-	}
-	
-	public void decrementGenericIndex() {
-		genericIndex--;
+	public Type getType() {
+		return type;
 	}
 }
