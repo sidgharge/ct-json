@@ -48,8 +48,9 @@ public class PojoDeserializerGenerator {
 				.superclass(getSuperClass())
 //				.addField(getMapperField())
 //				.addMethod(getConstructor())
-				.addMethod(getDeserializeMethod())
-				.addMethod(getGetTypeMethod());
+				//.addMethod(getDeserializeMethod())
+				.addMethod(getGetTypeMethod())
+				.addMethod(getInitializeMethod());
 		
 		JavaFile file = JavaFile.builder(getPackage(), builder.build()).build();
 
@@ -58,6 +59,19 @@ public class PojoDeserializerGenerator {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private MethodSpec getInitializeMethod() {
+		return MethodSpec.methodBuilder("initialize")
+				.addAnnotation(Override.class)
+				.addModifiers(Modifier.PUBLIC)
+				.returns(TypeName.get(metadata.getElement().asType()))
+				.addCode(getInitializeMethodBody())
+				.build();
+	}
+	
+	private CodeBlock getInitializeMethodBody() {
+		return CodeBlock.of("return new $T();", metadata.getElement());
 	}
 
 	private MethodSpec getGetTypeMethod() {
@@ -163,7 +177,6 @@ public class PojoDeserializerGenerator {
 		TypeName type = TypeName.get(metadata.getElement().asType());
 		return ParameterizedTypeName.get(
 				ClassName.get(AbstractDeserializer.class),
-				ClassName.get(JsonElement.class),
 				type
 		);
 	}

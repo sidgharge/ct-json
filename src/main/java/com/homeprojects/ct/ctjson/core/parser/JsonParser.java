@@ -6,18 +6,21 @@ import com.homeprojects.ct.ctjson.core.JsonKeyValue;
 import com.homeprojects.ct.ctjson.core.JsonNode;
 import com.homeprojects.ct.ctjson.core.JsonValue;
 import com.homeprojects.ct.ctjson.core.JsonValueType;
+import com.homeprojects.ct.ctjson.core.deserializer.Deserializer;
 
-public class JsonParser {
+public class JsonParser<T> {
 
 	private int i = 0;
 
 	private final String json;
 	
-	public JsonParser(String json) {
+	private Deserializer<T> deserializer;
+	
+	public JsonParser(String json, Deserializer<T> deserializer) {
 		this.json = json;
 	}
 
-	public JsonElement parse() {
+	public T parse() {
 		skipWhiteSpace();
 		if(i >= json.length()) {
 			return null;
@@ -26,61 +29,62 @@ public class JsonParser {
 		char c = getCharacter();
 		if (c == '{') {
 			return startJsonObject();
-		} else if(c == '[') {
-			return startJsonArray();
-		}
+		} 
+//		else if(c == '[') {
+//			return startJsonArray();
+//		}
 		
 		return null; // TODO throw exception
 	}
 
-	private JsonElement startJsonArray() {
-		JsonArray array = new JsonArray();
-		
-		skipWhiteSpace();
-		char c = getCharacter();
-		
-		if(c != '[') {
-			// TODO throw exception
-		}
-		i++;
-		
-		c = getCharacter();
-		
-		while(c != ']' && i < json.length()) {
-			JsonElement element = getJsonElement();
-			array.addElement(element);
-			skipComma();
-			c = getCharacter();
-		}
-		i++;
-		return array;
-	}
+//	private JsonElement startJsonArray() {
+//		JsonArray array = new JsonArray();
+//		
+//		skipWhiteSpace();
+//		char c = getCharacter();
+//		
+//		if(c != '[') {
+//			// TODO throw exception
+//		}
+//		i++;
+//		
+//		c = getCharacter();
+//		
+//		while(c != ']' && i < json.length()) {
+//			JsonElement element = getJsonElement();
+//			array.addElement(element);
+//			skipComma();
+//			c = getCharacter();
+//		}
+//		i++;
+//		return array;
+//	}
+//
+//	private JsonElement getJsonElement() {
+//		skipWhiteSpace();
+//		char c = getCharacter();
+//		if (c == '{') {
+//			return startJsonObject();
+//		} else if(c == '[') {
+//			return startJsonArray();
+//		} else if(c == '"') {
+//			i++;
+//			return new JsonValue(getNextKey(), JsonValueType.STRING);
+//		} else if(Character.isDigit(c)) {
+//			return new JsonValue(getNextNumber(), JsonValueType.NUMBER);
+//		} else {
+//			JsonValue booleanValue = getBoolean();
+//			if(booleanValue != null) {
+//				return booleanValue;
+//			} else {
+//				// TODO throw an error
+//				return null;
+//			}
+//		}
+//	}
 
-	private JsonElement getJsonElement() {
-		skipWhiteSpace();
-		char c = getCharacter();
-		if (c == '{') {
-			return startJsonObject();
-		} else if(c == '[') {
-			return startJsonArray();
-		} else if(c == '"') {
-			i++;
-			return new JsonValue(getNextKey(), JsonValueType.STRING);
-		} else if(Character.isDigit(c)) {
-			return new JsonValue(getNextNumber(), JsonValueType.NUMBER);
-		} else {
-			JsonValue booleanValue = getBoolean();
-			if(booleanValue != null) {
-				return booleanValue;
-			} else {
-				// TODO throw an error
-				return null;
-			}
-		}
-	}
-
-	private JsonNode startJsonObject() {
-		JsonNode node = new JsonNode();
+	private T startJsonObject() {
+		T object = deserializer.initialize();
 		
 		skipWhiteSpace();
 		char c = getCharacter();
@@ -92,14 +96,13 @@ public class JsonParser {
 		
 		c = getCharacter();
 		while(c != '}' && i < json.length()) {
-			JsonKeyValue pair = getJsonKeyValuePair();
-			node.addPair(pair);
+			setJsonKeyValuePair(object);
 			skipComma();
 			c = getCharacter();
 		}
 		i++;
 		
-		return node;
+		return object;
 	}
 
 	private char getCharacter() {
@@ -122,7 +125,7 @@ public class JsonParser {
 		}
 	}
 
-	private JsonKeyValue getJsonKeyValuePair() {
+	private void setJsonKeyValuePair(T object) {
 		skipWhiteSpace();
 		char c = getCharacter();
 		
@@ -131,9 +134,7 @@ public class JsonParser {
 		}
 		i++;
 		
-		JsonKeyValue pair = new JsonKeyValue();
 		String key = getNextKey();
-		pair.setKey(key);
 		
 		skipWhiteSpace();
 		c = getCharacter();
@@ -144,30 +145,29 @@ public class JsonParser {
 		
 		skipWhiteSpace();
 		c = getCharacter();
-		if(c == '{') {
-			pair.setValue(startJsonObject());
+		if(c == '{') { // nested json
+			// pair.setValue(startJsonObject()); // TODO Nested JSON
 		} else if(Character.isDigit(c)) {
 			String nextNumber = getNextNumber();
-			JsonValue value = new JsonValue(nextNumber, JsonValueType.NUMBER);
-			pair.setValue(value);
-		} else if(c == '"') {
+			deserializer.setValue(key, nextNumber);
+		} else if(c == '"') { // string value
 			i++;
 			String str = getNextKey();
-			JsonValue value = new JsonValue(str, JsonValueType.STRING);
-			pair.setValue(value);
-		} else if(c == '[') {
-			JsonElement element = startJsonArray();
-			pair.setValue(element);
-		} else {
+			deserializer.setValue(key, str);
+		}
+//		else if(c == '[') { // TODO Array
+//			JsonElement element = startJsonArray();
+//			pair.setValue(element);
+//		}
+		else { // boolean or null
 			JsonValue booleanValue = getBoolean();
 			if(booleanValue != null) {
-				pair.setValue(booleanValue);
+				deserializer.setValue(key, booleanValue);
 			} else {
 				// TODO throw an error
 			}
 		}
 		// TODO null as value
-		return pair;
 	}
 
 	private String getNextNumber() {

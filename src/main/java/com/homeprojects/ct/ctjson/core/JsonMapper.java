@@ -1,21 +1,17 @@
 package com.homeprojects.ct.ctjson.core;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
-import com.homeprojects.ct.ctjson.core.deserializer.ArrayDeserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.Deserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.IntegerDeserializer;
-import com.homeprojects.ct.ctjson.core.deserializer.ListDeserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.PrimitiveDeserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.PrimitiveDeserializer.BooleanDeserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.PrimitiveDeserializer.ByteDeserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.PrimitiveDeserializer.IntDeserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.PrimitiveDeserializer.ShortDeserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.StringDeserializer;
-import com.homeprojects.ct.ctjson.core.parser.JsonParser;
 import com.homeprojects.ct.ctjson.core.serializer.IntegerSerializer;
 import com.homeprojects.ct.ctjson.core.serializer.ListSerializer;
 import com.homeprojects.ct.ctjson.core.serializer.ObjectParser;
@@ -29,7 +25,7 @@ public class JsonMapper {
 	
 	private final Map<Class, Deserializer> deserializers;
 	
-	private final Map<Class, ArrayDeserializer> arrayDeserializers;
+//	private final Map<Class, ArrayDeserializer> arrayDeserializers;
 	
 	private final Map<Class, Serializer> serializers;
 
@@ -44,8 +40,8 @@ public class JsonMapper {
 		deserializers.put(String.class, new StringDeserializer());
 		deserializers.put(Integer.class, new IntegerDeserializer());
 		
-		arrayDeserializers = new HashMap<>();
-		arrayDeserializers.put(List.class, new ListDeserializer());
+//		arrayDeserializers = new HashMap<>();
+//		arrayDeserializers.put(List.class, new ListDeserializer());
 		
 		loadGeneratedDeserializers();
 		
@@ -79,26 +75,28 @@ public class JsonMapper {
 		}
 	}
 	
-	public <T extends JsonElement, R> R deserialize(T element, Class<R> clazz) {
-		Deserializer deserializer = deserializers.get(clazz);
-		return (R) deserializer.deserialize(element);
-	}
+//	public <T extends JsonElement, R> R deserialize(T element, Class<R> clazz) {
+//		Deserializer deserializer = deserializers.get(clazz);
+//		return (R) deserializer.deserialize(element);
+//	}
 	
 	public <R> R deserialize(String json, Class<R> clazz) {
-		JsonElement element = new JsonParser(json).parse();
-		return deserialize(element, clazz);
+//		JsonElement element = new JsonParser(json).parse();
+//		return deserialize(element, clazz);
+		Deserializer deserializer = deserializers.get(clazz);
+		return (R) deserializer.deserialize(json);
 	}
 	
-	public <R, S> R deserializeArray(String json, Class<R> containerClazz, Class<S> elementClass) {
-		JsonElement element = new JsonParser(json).parse();
-		return deserializeArray(element, containerClazz, elementClass);
-	}
+//	public <R, S> R deserializeArray(String json, Class<R> containerClazz, Class<S> elementClass) {
+//		JsonElement element = new JsonParser(json).parse();
+//		return deserializeArray(element, containerClazz, elementClass);
+//	}
 	
-	public <T extends JsonElement, R, S> R deserializeArray(T element, Class<R> containerClazz, Class<S> elementClass) {
-		ArrayDeserializer deserializer = arrayDeserializers.get(containerClazz);
-		Deserializer elementDeserializer = deserializers.get(elementClass);
-		return (R) deserializer.deserialize((JsonArray)element, elementDeserializer);
-	}
+//	public <T extends JsonElement, R, S> R deserializeArray(T element, Class<R> containerClazz, Class<S> elementClass) {
+//		ArrayDeserializer deserializer = arrayDeserializers.get(containerClazz);
+//		Deserializer elementDeserializer = deserializers.get(elementClass);
+//		return (R) deserializer.deserialize((JsonArray)element, elementDeserializer);
+//	}
 	
 	public byte deserializeAsByte(JsonElement element) {
 		if(element.getClass() != JsonValue.class) {
