@@ -12,6 +12,7 @@ import com.homeprojects.ct.ctjson.core.deserializer.PrimitiveDeserializer.ByteDe
 import com.homeprojects.ct.ctjson.core.deserializer.PrimitiveDeserializer.IntDeserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.PrimitiveDeserializer.ShortDeserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.StringDeserializer;
+import com.homeprojects.ct.ctjson.core.parser.JsonParser;
 import com.homeprojects.ct.ctjson.core.serializer.IntegerSerializer;
 import com.homeprojects.ct.ctjson.core.serializer.ListSerializer;
 import com.homeprojects.ct.ctjson.core.serializer.ObjectParser;
@@ -85,6 +86,11 @@ public class JsonMapper {
 //		return deserialize(element, clazz);
 		Deserializer deserializer = deserializers.get(clazz);
 		return (R) deserializer.deserialize(json);
+	}
+	
+	public <R> R deserialize(JsonParser parser, Class<R> clazz) {
+		Deserializer deserializer = deserializers.get(clazz);
+		return (R) deserializer.deserialize(parser);
 	}
 	
 //	public <R, S> R deserializeArray(String json, Class<R> containerClazz, Class<S> elementClass) {

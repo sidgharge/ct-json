@@ -14,12 +14,11 @@ import com.homeprojects.ct.ctjson.PojoMetadata;
 import com.homeprojects.ct.ctjson.Property;
 import com.homeprojects.ct.ctjson.annotations.GeneratedDeserialzer;
 import com.homeprojects.ct.ctjson.core.JsonElement;
-import com.homeprojects.ct.ctjson.core.JsonMapper;
 import com.homeprojects.ct.ctjson.core.JsonNode;
 import com.homeprojects.ct.ctjson.core.deserializer.AbstractDeserializer;
+import com.homeprojects.ct.ctjson.core.parser.JsonParser;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
@@ -50,7 +49,8 @@ public class PojoDeserializerGenerator {
 //				.addMethod(getConstructor())
 				//.addMethod(getDeserializeMethod())
 				.addMethod(getGetTypeMethod())
-				.addMethod(getInitializeMethod());
+				.addMethod(getInitializeMethod())
+				.addMethod(getSetValueMethod());
 		
 		JavaFile file = JavaFile.builder(getPackage(), builder.build()).build();
 
@@ -83,21 +83,78 @@ public class PojoDeserializerGenerator {
 			.addStatement("return $T.class", metadata.getElement())
 			.build();
 	}
+	
+	private MethodSpec getSetValueMethod() {
+		TypeName type = TypeName.get(metadata.getErasedType());
+//		T object, String fieldName, Object value, JsonParser parser
+		return MethodSpec.methodBuilder("setValue")
+			.addAnnotation(Override.class)
+			.addModifiers(Modifier.PUBLIC)
+			.returns(void.class)
+			.addParameter(ParameterSpec.builder(type, "object").build())
+			.addParameter(ParameterSpec.builder(String.class, "key").build())
+			.addParameter(ParameterSpec.builder(JsonParser.class, "parser").build())
+			.addCode(getSetValueMethodBody())
+			.build();
+	}
+	
+	private CodeBlock getSetValueMethodBody() {
+		CodeBlock.Builder builder = CodeBlock.builder();
+		builder.beginControlFlow("switch(key)");
+		
+		for (Property property: metadata.getProperties()) {
+			builder.add("case $S:\n", property.getField().getSimpleName().toString());
+			CodeBlock block = getSetFieldCode(property);
+			builder.addStatement("object.$L($L)", property.getSetterMethodName(), block);
+			builder.addStatement("break");
+		}
+		builder.add("default:\n");
+//		builder.addStatement("parser.skipValue()");
+		builder.addStatement("break");
+		builder.endControlFlow();
+		
+		return builder.build();
+	}
+	
+	private CodeBlock getSetFieldCode(Property property) {
+		CodeBlock.Builder builder = CodeBlock.builder();
+		TypeMirror propertyType = property.getField().asType();
+		TypeKind kind = propertyType.getKind();
+		if(kind.isPrimitive()) {
+			builder.add(getPrimitiveCode(property, kind));
+		} 
+//		else if(env.getTypeUtils().isSameType(propertyType, stringType)) {
+//			builder.add("getNextString()");
+//		} else if(kind.equals(TypeKind.TYPEVAR)) {
+////			System.out.println(propertyType);deserializeGenericObject
+//			builder.add("deserializeGenericObject()");
+//		}
+		else {
+			builder.add("mapper.deserialize(parser, $T.class)", property.getField());
+//			CodeBlock.Builder argsBuilder = CodeBlock.builder();
+//			if(propertyType instanceof DeclaredType) {
+//				DeclaredType dclt = (DeclaredType) propertyType;
+//				List<? extends TypeMirror> arguments = dclt.getTypeArguments();
+//				
+//				arguments.stream().forEach(argument -> argsBuilder.add(", $T.class", argument));
+//			}
+//			builder.add("deserialize($T.class $L)", env.getTypeUtils().erasure(propertyType), argsBuilder.build());
+		}
+		return builder.build();
+	}
+	
+	private CodeBlock getPrimitiveCode(Property property, TypeKind kind) {
+		if(kind.equals(TypeKind.INT)) {
+			return CodeBlock.of("parser.toInt(parser.getNextNumber())");
+		} else if(kind.equals(TypeKind.BOOLEAN)) {
+			return CodeBlock.of("parser.getNextBoolean()");
+		}
+		return CodeBlock.builder().build(); // TODO Handle all cases
+	}
+
 
 	private String getPackage() {
 		return ((PackageElement)metadata.getElement().getEnclosingElement()).getQualifiedName().toString();
-	}
-
-	private FieldSpec getMapperField() {
-		return FieldSpec.builder(JsonMapper.class, "mapper", Modifier.PRIVATE, Modifier.FINAL).build();
-	}
-
-	private MethodSpec getConstructor() {
-		return MethodSpec.constructorBuilder()
-				.addModifiers(Modifier.PUBLIC)
-				.addParameter(ParameterSpec.builder(JsonMapper.class, "mapper").build())
-				.addCode(getConstructorBody())
-				.build();
 	}
 
 	private CodeBlock getConstructorBody() {

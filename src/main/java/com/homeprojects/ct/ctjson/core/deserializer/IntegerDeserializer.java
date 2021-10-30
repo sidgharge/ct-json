@@ -11,14 +11,4 @@ public class IntegerDeserializer extends AbstractDeserializer<Integer> {
 	public Class<Integer> getType() {
 		return Integer.class;
 	}
-
-	@Override
-	public Integer initialize() {
-		return null;
-	}
-
-	@Override
-	public <U> void setValue(String fieldName, U value) {
-		
-	}
 }

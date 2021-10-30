@@ -1,26 +1,18 @@
 package com.homeprojects.ct.ctjson.core.parser;
 
-import com.homeprojects.ct.ctjson.core.JsonArray;
-import com.homeprojects.ct.ctjson.core.JsonElement;
-import com.homeprojects.ct.ctjson.core.JsonKeyValue;
-import com.homeprojects.ct.ctjson.core.JsonNode;
-import com.homeprojects.ct.ctjson.core.JsonValue;
-import com.homeprojects.ct.ctjson.core.JsonValueType;
 import com.homeprojects.ct.ctjson.core.deserializer.Deserializer;
 
-public class JsonParser<T> {
+public class JsonParser {
 
 	private int i = 0;
 
 	private final String json;
 	
-	private Deserializer<T> deserializer;
-	
-	public JsonParser(String json, Deserializer<T> deserializer) {
+	public JsonParser(String json) {
 		this.json = json;
 	}
 
-	public T parse() {
+	public <T> T parse(Deserializer<T> deserializer) {
 		skipWhiteSpace();
 		if(i >= json.length()) {
 			return null;
@@ -28,7 +20,7 @@ public class JsonParser<T> {
 		
 		char c = getCharacter();
 		if (c == '{') {
-			return startJsonObject();
+			return startJsonObject(deserializer);
 		} 
 //		else if(c == '[') {
 //			return startJsonArray();
@@ -83,7 +75,7 @@ public class JsonParser<T> {
 //		}
 //	}
 
-	private T startJsonObject() {
+	private <T> T startJsonObject(Deserializer<T> deserializer) {
 		T object = deserializer.initialize();
 		
 		skipWhiteSpace();
@@ -96,7 +88,7 @@ public class JsonParser<T> {
 		
 		c = getCharacter();
 		while(c != '}' && i < json.length()) {
-			setJsonKeyValuePair(object);
+			setJsonKeyValuePair(object, deserializer);
 			skipComma();
 			c = getCharacter();
 		}
@@ -125,7 +117,7 @@ public class JsonParser<T> {
 		}
 	}
 
-	private void setJsonKeyValuePair(T object) {
+	private <T> void setJsonKeyValuePair(T object, Deserializer<T> deserializer) {
 		skipWhiteSpace();
 		char c = getCharacter();
 		
@@ -146,31 +138,29 @@ public class JsonParser<T> {
 		skipWhiteSpace();
 		c = getCharacter();
 		if(c == '{') { // nested json
-			// pair.setValue(startJsonObject()); // TODO Nested JSON
+			 deserializer.setValue(object, key, this); // TODO Nested JSON
 		} else if(Character.isDigit(c)) {
-			String nextNumber = getNextNumber();
-			deserializer.setValue(key, nextNumber);
+			deserializer.setValue(object, key, this);
 		} else if(c == '"') { // string value
 			i++;
-			String str = getNextKey();
-			deserializer.setValue(key, str);
+			deserializer.setValue(object, key, this);
 		}
 //		else if(c == '[') { // TODO Array
 //			JsonElement element = startJsonArray();
 //			pair.setValue(element);
 //		}
 		else { // boolean or null
-			JsonValue booleanValue = getBoolean();
-			if(booleanValue != null) {
-				deserializer.setValue(key, booleanValue);
-			} else {
-				// TODO throw an error
-			}
+			deserializer.setValue(object, key, this);
+//			if(booleanValue != null) {
+//				deserializer.setValue(object, key, booleanValue, this);
+//			} else {
+//				// TODO throw an error
+//			}
 		}
 		// TODO null as value
 	}
 
-	private String getNextNumber() {
+	public String getNextNumber() {
 		StringBuilder builder = new StringBuilder();
 		char c = getCharacter();
 		while (i < json.length() && (Character.isDigit(c) || c == '.')) {
@@ -181,7 +171,7 @@ public class JsonParser<T> {
 		return builder.toString();
 	}
 
-	private String getNextKey() {
+	public String getNextKey() {
 		StringBuilder builder = new StringBuilder();
 		char c;
 		while (i < json.length() && (c = json.charAt(i++)) != '"') {
@@ -190,19 +180,23 @@ public class JsonParser<T> {
 		return builder.toString();
 	}
 	
-	private JsonValue getBoolean() {
+	public String getNextString() {
+		return getNextKey();
+	}
+	
+	private Boolean getNextBoolean() {
 		if(i + 3 < json.length()) {
 			String b = json.substring(i, i + 4);
 			if(b.equals("true")) {
 				i = i + 4;
-				return new JsonValue(b, JsonValueType.BOOLEAN);
+				return true;
 			}	
 		}
 		if(i + 4 < json.length()) {
 			String b = json.substring(i, i + 5);
 			if(b.equals("false")) {
 				i = i + 5;
-				return new JsonValue(b, JsonValueType.BOOLEAN);
+				return false;
 			}	
 		}
 		return null;
@@ -214,5 +208,9 @@ public class JsonParser<T> {
 			i++;
 			c = getCharacter();
 		}
+	}
+	
+	public int toInt(Object object) {
+		return Integer.parseInt(object.toString());
 	}
 }
