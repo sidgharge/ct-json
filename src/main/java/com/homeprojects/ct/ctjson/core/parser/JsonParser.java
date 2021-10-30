@@ -124,8 +124,6 @@ public class JsonParser {
 		if(c != '"') {
 			// TODO throw exception
 		}
-		i++;
-		
 		String key = getNextKey();
 		
 		skipWhiteSpace();
@@ -136,28 +134,7 @@ public class JsonParser {
 		i++;
 		
 		skipWhiteSpace();
-		c = getCharacter();
-		if(c == '{') { // nested json
-			 deserializer.setValue(object, key, this); // TODO Nested JSON
-		} else if(Character.isDigit(c)) {
-			deserializer.setValue(object, key, this);
-		} else if(c == '"') { // string value
-			i++;
-			deserializer.setValue(object, key, this);
-		}
-//		else if(c == '[') { // TODO Array
-//			JsonElement element = startJsonArray();
-//			pair.setValue(element);
-//		}
-		else { // boolean or null
-			deserializer.setValue(object, key, this);
-//			if(booleanValue != null) {
-//				deserializer.setValue(object, key, booleanValue, this);
-//			} else {
-//				// TODO throw an error
-//			}
-		}
-		// TODO null as value
+		deserializer.setValue(object, key, this);
 	}
 
 	public String getNextNumber() {
@@ -174,6 +151,7 @@ public class JsonParser {
 	public String getNextKey() {
 		StringBuilder builder = new StringBuilder();
 		char c;
+		i++;
 		while (i < json.length() && (c = json.charAt(i++)) != '"') {
 			builder.append(c);
 		}
@@ -210,7 +188,28 @@ public class JsonParser {
 		}
 	}
 	
+	// Utility methods
 	public int toInt(Object object) {
 		return Integer.parseInt(object.toString());
+	}
+	
+	public short toShort(Object object) {
+		return Short.parseShort(object.toString());
+	}
+	
+	public byte toByte(Object object) {
+		return Byte.parseByte(object.toString());
+	}
+	
+	public long toLong(Object object) {
+		return Long.parseLong(object.toString());
+	}
+	
+	public double toDouble(Object object) {
+		return Double.parseDouble(object.toString());
+	}
+	
+	public float toFloat(Object object) {
+		return Float.parseFloat(object.toString());
 	}
 }

@@ -146,6 +146,14 @@ public class PojoDeserializerGenerator {
 	private CodeBlock getPrimitiveCode(Property property, TypeKind kind) {
 		if(kind.equals(TypeKind.INT)) {
 			return CodeBlock.of("parser.toInt(parser.getNextNumber())");
+		} else if(kind.equals(TypeKind.SHORT)) {
+			return CodeBlock.of("parser.toShort(parser.getNextNumber())");
+		} else if(kind.equals(TypeKind.BYTE)) {
+			return CodeBlock.of("parser.toByte(parser.getNextNumber())");
+		} else if(kind.equals(TypeKind.DOUBLE)) {
+			return CodeBlock.of("parser.toDouble(parser.getNextNumber())");
+		} else if(kind.equals(TypeKind.FLOAT)) {
+			return CodeBlock.of("parser.toFloat(parser.getNextNumber())");
 		} else if(kind.equals(TypeKind.BOOLEAN)) {
 			return CodeBlock.of("parser.getNextBoolean()");
 		}
