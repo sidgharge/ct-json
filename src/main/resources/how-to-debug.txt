@@ -1,0 +1,7 @@
+- In intellij go to the project using this jar
+- Edit the run configuration (Edit Configuration)
+- Click on topp left + icon
+- Chose Remove JVM Debug
+- Choose a name and select 8000 as port
+- Go to the project's pom directory and run mvnDebug clean install
+- Then in intellij debug the new configuration

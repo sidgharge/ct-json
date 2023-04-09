@@ -4,14 +4,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 
-import com.homeprojects.ct.ctjson.core.deserializer.Deserializer;
-import com.homeprojects.ct.ctjson.core.deserializer.IntegerDeserializer;
-import com.homeprojects.ct.ctjson.core.deserializer.PrimitiveDeserializer;
+import com.homeprojects.ct.ctjson.GenericTypeMetadata;
+import com.homeprojects.ct.ctjson.core.deserializer.*;
 import com.homeprojects.ct.ctjson.core.deserializer.PrimitiveDeserializer.BooleanDeserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.PrimitiveDeserializer.ByteDeserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.PrimitiveDeserializer.IntDeserializer;
 import com.homeprojects.ct.ctjson.core.deserializer.PrimitiveDeserializer.ShortDeserializer;
-import com.homeprojects.ct.ctjson.core.deserializer.StringDeserializer;
 import com.homeprojects.ct.ctjson.core.parser.JsonParser;
 import com.homeprojects.ct.ctjson.core.serializer.IntegerSerializer;
 import com.homeprojects.ct.ctjson.core.serializer.ListSerializer;
@@ -29,6 +27,8 @@ public class JsonMapper {
 //	private final Map<Class, ArrayDeserializer> arrayDeserializers;
 	
 	private final Map<Class, Serializer> serializers;
+
+	private GenericTypesManager manager;
 
 	public JsonMapper() {
 		this.primitiveDeserializers = new HashMap<>();
@@ -60,12 +60,21 @@ public class JsonMapper {
 		for (Serializer serializer : serializers.values()) {
 			serializer.setJsonMapper(this);
 		}
+
+		loadGeneratedGenericTypesManager();
 	}
 
 	private void loadGeneratedDeserializers() {
 		ServiceLoader<Deserializer> loader = ServiceLoader.load(Deserializer.class);
 		for (Deserializer deserializer : loader) {
 			deserializers.put(deserializer.getType(), deserializer);
+		}
+	}
+
+	private void loadGeneratedGenericTypesManager() {
+		ServiceLoader<GenericTypesManager> loader = ServiceLoader.load(GenericTypesManager.class);
+		for (GenericTypesManager manager : loader) {
+			this.manager = manager;
 		}
 	}
 	
@@ -91,6 +100,13 @@ public class JsonMapper {
 	public <R> R deserialize(JsonParser parser, Class<R> clazz) {
 		Deserializer deserializer = deserializers.get(clazz);
 		return (R) deserializer.deserialize(parser);
+	}
+
+	public <R> R deserialize(String json, String parameterizedTypeKey) {
+		RuntimeGenericTypeMetadata metadata = manager.getMetadata(parameterizedTypeKey);
+		Deserializer deserializer = deserializers.get(metadata.getClazz());
+		deserializer.deserialize(json, metadata);
+		return null;
 	}
 	
 //	public <R, S> R deserializeArray(String json, Class<R> containerClazz, Class<S> elementClass) {

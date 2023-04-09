@@ -65,22 +65,22 @@ public class PojoDeserializerGenerator {
 		return MethodSpec.methodBuilder("initialize")
 				.addAnnotation(Override.class)
 				.addModifiers(Modifier.PUBLIC)
-				.returns(TypeName.get(metadata.getElement().asType()))
+				.returns(TypeName.get(metadata.getErasedType()))
 				.addCode(getInitializeMethodBody())
 				.build();
 	}
 	
 	private CodeBlock getInitializeMethodBody() {
-		return CodeBlock.of("return new $T();", metadata.getElement());
+		return CodeBlock.of("return new $T();", metadata.getErasedType());
 	}
 
 	private MethodSpec getGetTypeMethod() {
-		ParameterizedTypeName returnType = ParameterizedTypeName.get(ClassName.get(Class.class), TypeName.get(metadata.getElement().asType()));
+		ParameterizedTypeName returnType = ParameterizedTypeName.get(ClassName.get(Class.class), TypeName.get(metadata.getErasedType()));
 		return MethodSpec.methodBuilder("getType")
 			.addAnnotation(Override.class)
 			.addModifiers(Modifier.PUBLIC)
 			.returns(returnType)
-			.addStatement("return $T.class", metadata.getElement())
+			.addStatement("return $T.class", metadata.getErasedType())
 			.build();
 	}
 	
@@ -241,7 +241,7 @@ public class PojoDeserializerGenerator {
 	}
 
 	private TypeName getSuperClass() {
-		TypeName type = TypeName.get(metadata.getElement().asType());
+		TypeName type = TypeName.get(metadata.getErasedType());
 		return ParameterizedTypeName.get(
 				ClassName.get(AbstractDeserializer.class),
 				type

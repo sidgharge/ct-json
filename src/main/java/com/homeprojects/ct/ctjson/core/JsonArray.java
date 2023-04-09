@@ -15,10 +15,10 @@ public class JsonArray implements JsonElement {
 	public List<JsonElement> getElements() {
 		return elements;
 	}
-	
+
 	@Override
 	public String toString() {
-		String string = elements.stream().map(e -> e.toString()).collect(Collectors.joining(", "));
+		String string = elements.stream().map(Object::toString).collect(Collectors.joining(", "));
 		return "[" + string + "]";
 	}
 	
