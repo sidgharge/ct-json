@@ -12,9 +12,11 @@ public interface Deserializer<T> {
 
 	T deserialize(String json, RuntimeGenericTypeMetadata metadata);
 
+	T deserialize(JsonParser parser, RuntimeGenericTypeMetadata metadata);
+
 	T initialize();
 	
-	void setValue(T object, String key, JsonParser parser);
+	void setValue(T object, String key, JsonParser parser, RuntimeGenericTypeMetadata metadata);
 	
 	Class<T> getType();
 	

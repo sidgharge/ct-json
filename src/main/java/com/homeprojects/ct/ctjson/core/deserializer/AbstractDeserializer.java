@@ -16,21 +16,27 @@ public abstract class AbstractDeserializer<T> implements Deserializer<T> {
 	@Override
 	public T deserialize(String json) {
 		JsonParser parser = new JsonParser(json);
-		return parser.parse(this);
+		return parser.parse(this, null);
 	}
 	
 	@Override
 	public T deserialize(JsonParser parser) {
-		return parser.parse(this);
+		return parser.parse(this, null);
 	}
 
 	@Override
 	public T deserialize(String json, RuntimeGenericTypeMetadata metadata) {
-		return null;
+		JsonParser parser = new JsonParser(json);
+		return parser.parse(this, metadata);
 	}
 
 	@Override
-	public void setValue(T object, String key, JsonParser parser) {}
+	public T deserialize(JsonParser parser, RuntimeGenericTypeMetadata metadata) {
+		return parser.parse(this, metadata);
+	}
+
+	@Override
+	public void setValue(T object, String key, JsonParser parser, RuntimeGenericTypeMetadata metadata) {}
 	
 	@Override
 	public T initialize() {

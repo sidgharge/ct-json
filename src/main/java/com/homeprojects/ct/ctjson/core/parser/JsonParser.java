@@ -1,5 +1,6 @@
 package com.homeprojects.ct.ctjson.core.parser;
 
+import com.homeprojects.ct.ctjson.core.RuntimeGenericTypeMetadata;
 import com.homeprojects.ct.ctjson.core.deserializer.Deserializer;
 
 public class JsonParser {
@@ -12,7 +13,7 @@ public class JsonParser {
 		this.json = json;
 	}
 
-	public <T> T parse(Deserializer<T> deserializer) {
+	public <T> T parse(Deserializer<T> deserializer, RuntimeGenericTypeMetadata metadata) {
 		skipWhiteSpace();
 		if(i >= json.length()) {
 			return null;
@@ -20,7 +21,7 @@ public class JsonParser {
 		
 		char c = getCharacter();
 		if (c == '{') {
-			return startJsonObject(deserializer);
+			return startJsonObject(deserializer, metadata);
 		} 
 //		else if(c == '[') {
 //			return startJsonArray();
@@ -75,7 +76,7 @@ public class JsonParser {
 //		}
 //	}
 
-	private <T> T startJsonObject(Deserializer<T> deserializer) {
+	private <T> T startJsonObject(Deserializer<T> deserializer, RuntimeGenericTypeMetadata metadata) {
 		T object = deserializer.initialize();
 		
 		skipWhiteSpace();
@@ -88,7 +89,7 @@ public class JsonParser {
 		
 		c = getCharacter();
 		while(c != '}' && i < json.length()) {
-			setJsonKeyValuePair(object, deserializer);
+			setJsonKeyValuePair(object, deserializer, metadata);
 			skipComma();
 			c = getCharacter();
 		}
@@ -117,7 +118,7 @@ public class JsonParser {
 		}
 	}
 
-	private <T> void setJsonKeyValuePair(T object, Deserializer<T> deserializer) {
+	private <T> void setJsonKeyValuePair(T object, Deserializer<T> deserializer, RuntimeGenericTypeMetadata metadata) {
 		skipWhiteSpace();
 		char c = getCharacter();
 		
@@ -134,7 +135,7 @@ public class JsonParser {
 		i++;
 		
 		skipWhiteSpace();
-		deserializer.setValue(object, key, this);
+		deserializer.setValue(object, key, this, metadata);
 	}
 
 	public String getNextNumber() {

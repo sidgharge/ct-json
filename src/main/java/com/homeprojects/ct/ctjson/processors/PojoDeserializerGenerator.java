@@ -15,6 +15,7 @@ import com.homeprojects.ct.ctjson.Property;
 import com.homeprojects.ct.ctjson.annotations.GeneratedDeserialzer;
 import com.homeprojects.ct.ctjson.core.JsonElement;
 import com.homeprojects.ct.ctjson.core.JsonNode;
+import com.homeprojects.ct.ctjson.core.RuntimeGenericTypeMetadata;
 import com.homeprojects.ct.ctjson.core.deserializer.AbstractDeserializer;
 import com.homeprojects.ct.ctjson.core.parser.JsonParser;
 import com.squareup.javapoet.ClassName;
@@ -94,6 +95,7 @@ public class PojoDeserializerGenerator {
 			.addParameter(ParameterSpec.builder(type, "object").build())
 			.addParameter(ParameterSpec.builder(String.class, "key").build())
 			.addParameter(ParameterSpec.builder(JsonParser.class, "parser").build())
+			.addParameter(ParameterSpec.builder(RuntimeGenericTypeMetadata.class, "metadata").build())
 			.addCode(getSetValueMethodBody())
 			.build();
 	}
@@ -119,16 +121,18 @@ public class PojoDeserializerGenerator {
 	private CodeBlock getSetFieldCode(Property property) {
 		CodeBlock.Builder builder = CodeBlock.builder();
 		TypeMirror propertyType = property.getField().asType();
+		System.out.println("FieldType: " + propertyType + ":::" + propertyType.getKind());
 		TypeKind kind = propertyType.getKind();
 		if(kind.isPrimitive()) {
 			builder.add(getPrimitiveCode(property, kind));
 		} 
 //		else if(env.getTypeUtils().isSameType(propertyType, stringType)) {
 //			builder.add("getNextString()");
-//		} else if(kind.equals(TypeKind.TYPEVAR)) {
-////			System.out.println(propertyType);deserializeGenericObject
-//			builder.add("deserializeGenericObject()");
-//		}
+		else if(kind.equals(TypeKind.TYPEVAR)) {
+//			System.out.println(propertyType);deserializeGenericObject
+			System.out.println(property.getField().getSimpleName().toString());
+			builder.add("mapper.deserialize(parser, metadata.getGeneric($S))", property.getField().asType().toString());
+		}
 		else {
 			builder.add("mapper.deserialize(parser, $T.class)", property.getField());
 //			CodeBlock.Builder argsBuilder = CodeBlock.builder();

@@ -1,16 +1,18 @@
 package com.homeprojects.ct.ctjson.processors;
 
 import com.homeprojects.ct.ctjson.GenericTypeMetadata;
+import com.homeprojects.ct.ctjson.annotations.GeneratedGenericTye;
 import com.homeprojects.ct.ctjson.core.RuntimeGenericTypeMetadata;
 import com.homeprojects.ct.ctjson.core.deserializer.GenericTypesManager;
-import com.squareup.javapoet.*;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeSpec;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class GenericTypesManagerGenerator {
 
@@ -25,7 +27,7 @@ public class GenericTypesManagerGenerator {
 
     public void generate() {
         TypeSpec typeSpec = TypeSpec.classBuilder("SimpleGenericTypesManager")
-//                .addAnnotation(GenericType.class) // For Regsistering as Implementation Service
+                .addAnnotation(GeneratedGenericTye.class)
                 .addModifiers(Modifier.PUBLIC)
                 .superclass(GenericTypesManager.class)
                 .addMethod(getConstructor())

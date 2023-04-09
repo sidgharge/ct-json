@@ -1,7 +1,7 @@
 package com.homeprojects.ct.ctjson.core;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RuntimeGenericTypeMetadata {
 
@@ -9,12 +9,15 @@ public class RuntimeGenericTypeMetadata {
 
     private final String genericName;
 
-    private final List<RuntimeGenericTypeMetadata> generics;
+    private final Map<String, RuntimeGenericTypeMetadata> generics;
 
     public RuntimeGenericTypeMetadata(Class<?> clazz, String genericName, RuntimeGenericTypeMetadata... generics) {
         this.clazz = clazz;
         this.genericName = genericName;
-        this.generics = Arrays.asList(generics);
+        this.generics = new HashMap<>();
+        for (RuntimeGenericTypeMetadata generic : generics) {
+            this.generics.put(generic.getGenericName(),generic);
+        }
     }
 
     public Class<?> getClazz() {
@@ -25,8 +28,8 @@ public class RuntimeGenericTypeMetadata {
         return genericName;
     }
 
-    public List<RuntimeGenericTypeMetadata> getGenerics() {
-        return generics;
+    public RuntimeGenericTypeMetadata getGeneric(String genericName) {
+        return generics.get(genericName);
     }
 
     @Override
