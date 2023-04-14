@@ -1,11 +1,14 @@
 package com.homeprojects.ct.ctjson.processors;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -125,30 +128,49 @@ public class PojoDeserializerGenerator {
 		TypeKind kind = propertyType.getKind();
 		if(kind.isPrimitive()) {
 			builder.add(getPrimitiveCode(property, kind));
-		} 
-//		else if(env.getTypeUtils().isSameType(propertyType, stringType)) {
-//			builder.add("getNextString()");
-		else if(kind.equals(TypeKind.TYPEVAR)) {
-//			System.out.println(propertyType);deserializeGenericObject
-			builder.add("mapper.deserialize(parser, metadata.getGeneric($S))", property.getField().asType().toString());
-//		} else if (((DeclaredType) propertyType).getTypeArguments().size() > 0) {
+		} else if(kind.equals(TypeKind.TYPEVAR)) {
 //			builder.add("mapper.deserialize(parser, metadata.getGeneric($S))", property.getField().asType().toString());
+			List<Integer> indices = getGenericIndices(Arrays.asList(propertyType));
+//			CodeBlock.Builder metadataBuilder = CodeBlock.builder()
+//					.add("new $T($T.class, $S, ", RuntimeGenericTypeMetadata.class, property.getErasedType(), property.getErasedType());
+//			indices.forEach(index -> metadataBuilder.add("metadata.getGeneric($L)", index));
+//			metadataBuilder.add(")");
+			builder.add("mapper.deserialize(parser, metadata.getGeneric($L))", indices.get(0));
 		} else {
-//			builder.add("mapper.deserialize(parser, $T.class)", property.getField());
-			builder.add("mapper.deserialize(parser, $T.class, $L)", property.getErasedType(), "metadata");
-
-//			CodeBlock.Builder argsBuilder = CodeBlock.builder();
-//			if(propertyType instanceof DeclaredType) {
-//				DeclaredType dclt = (DeclaredType) propertyType;
-//				List<? extends TypeMirror> arguments = dclt.getTypeArguments();
-//				
-//				arguments.stream().forEach(argument -> argsBuilder.add(", $T.class", argument));
-//			}
-//			builder.add("deserialize($T.class $L)", env.getTypeUtils().erasure(propertyType), argsBuilder.build());
+			setFieldNonPrimitive(property, builder, ((DeclaredType) propertyType).getTypeArguments());
 		}
 		return builder.build();
 	}
-	
+
+	private void setFieldNonPrimitive(Property property, CodeBlock.Builder builder, List<? extends TypeMirror> typeArguments) {
+		if (typeArguments.size() > 0) {
+			List<Integer> indices = getGenericIndices(typeArguments);
+			CodeBlock.Builder metadataBuilder = CodeBlock.builder()
+					.add("new $T($T.class, $S, ", RuntimeGenericTypeMetadata.class, property.getErasedType(), property.getErasedType());
+			indices.forEach(index -> metadataBuilder.add("metadata.getGeneric($L)", index));
+			metadataBuilder.add(")");
+			builder.add("mapper.deserialize(parser, $T.class, $L)", property.getErasedType(), metadataBuilder.build());
+		} else {
+			builder.add("mapper.deserialize(parser, $T.class)", property.getErasedType());
+		}
+	}
+
+	private List<Integer> getGenericIndices(List<? extends TypeMirror> typeArguments) {
+		List<Integer> indices = new ArrayList<>();
+
+		for (TypeMirror typeArgument : typeArguments) {
+			for (int i = 0; i < metadata.getElement().getTypeParameters().size(); i++) {
+				TypeParameterElement tp = metadata.getElement().getTypeParameters().get(i);
+				String typeName = tp.getSimpleName().toString();
+				if(!typeName.equals(typeArgument.toString())){
+					continue;
+				}
+				indices.add(i);
+			}
+		}
+		return indices;
+	}
+
 	private CodeBlock getPrimitiveCode(Property property, TypeKind kind) {
 		switch (kind) {
 		case INT:

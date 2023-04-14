@@ -1,6 +1,5 @@
 package com.homeprojects.ct.ctjson;
 
-import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import java.util.ArrayList;
 import java.util.List;

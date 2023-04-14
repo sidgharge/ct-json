@@ -42,4 +42,8 @@ public abstract class AbstractDeserializer<T> implements Deserializer<T> {
 	public T initialize() {
 		return null;
 	}
+
+	protected void getMetadata(RuntimeGenericTypeMetadata metadata) {
+
+	}
 }
