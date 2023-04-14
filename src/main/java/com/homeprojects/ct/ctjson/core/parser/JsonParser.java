@@ -30,50 +30,29 @@ public class JsonParser {
 		return null; // TODO throw exception
 	}
 
-//	private <T> void startJsonArray(Deserializer<T> deserializer, RuntimeGenericTypeMetadata metadata) {
-//		T array = deserializer.initialize();
-//		skipWhiteSpace();
-//		char c = getCharacter();
-//
-//		if(c != '[') {
-//			// TODO throw exception
-//		}
-//		i++;
-//
-//		c = getCharacter();
-//
-//		while(c != ']' && i < json.length()) {
+	public <T> T jsonArray(Deserializer<T> deserializer, RuntimeGenericTypeMetadata metadata) {
+		T array = deserializer.initialize();
+		skipWhiteSpace();
+		char c = getCharacter();
+
+		if(c != '[') {
+			// TODO throw exception
+		}
+		i++;
+
+		c = getCharacter();
+
+		while(c != ']' && i < json.length()) {
 //			JsonElement element = getJsonElement();
 //			array.addElement(element);
-//			skipComma();
-//			c = getCharacter();
-//		}
-//		i++;
-//		return array;
-//	}
-
-//	private JsonElement getJsonElement() {
-//		skipWhiteSpace();
-//		char c = getCharacter();
-//		if (c == '{') {
-//			return startJsonObject();
-//		} else if(c == '[') {
-//			return startJsonArray();
-//		} else if(c == '"') {
-//			i++;
-//			return new JsonValue(getNextKey(), JsonValueType.STRING);
-//		} else if(Character.isDigit(c)) {
-//			return new JsonValue(getNextNumber(), JsonValueType.NUMBER);
-//		} else {
-//			JsonValue booleanValue = getBoolean();
-//			if(booleanValue != null) {
-//				return booleanValue;
-//			} else {
-//				// TODO throw an error
-//				return null;
-//			}
-//		}
-//	}
+			deserializer.setValue(array, "", this, metadata);
+			skipComma();
+			skipWhiteSpace();
+			c = getCharacter();
+		}
+		i++;
+		return array;
+	}
 
 	private <T> T startJsonObject(Deserializer<T> deserializer, RuntimeGenericTypeMetadata metadata) {
 		T object = deserializer.initialize();

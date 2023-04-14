@@ -4,9 +4,10 @@ import com.homeprojects.ct.ctjson.core.JsonMapper;
 import com.homeprojects.ct.ctjson.core.RuntimeGenericTypeMetadata;
 import com.homeprojects.ct.ctjson.core.parser.JsonParser;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class ListDeserializer2 implements Deserializer<List> {
+public class ListDeserializer2 extends AbstractDeserializer<List> implements Deserializer<List> {
 
     @Override
     public List deserialize(String json) {
@@ -15,7 +16,6 @@ public class ListDeserializer2 implements Deserializer<List> {
 
     @Override
     public List deserialize(JsonParser parser) {
-//        return parser.;
         return null;
     }
 
@@ -26,17 +26,18 @@ public class ListDeserializer2 implements Deserializer<List> {
 
     @Override
     public List deserialize(JsonParser parser, RuntimeGenericTypeMetadata metadata) {
-        return null;
+        return parser.jsonArray(this, metadata);
     }
 
     @Override
     public List initialize() {
-        return null;
+        return new ArrayList<>();
     }
 
     @Override
-    public void setValue(List object, String key, JsonParser parser, RuntimeGenericTypeMetadata metadata) {
-
+    public void setValue(List list, String key, JsonParser parser, RuntimeGenericTypeMetadata metadata) {
+        Object object = mapper.deserialize(parser, metadata.getGeneric(0));
+        list.add(object);
     }
 
     @Override
@@ -44,8 +45,4 @@ public class ListDeserializer2 implements Deserializer<List> {
         return null;
     }
 
-    @Override
-    public void setJsonMapper(JsonMapper mapper) {
-
-    }
 }

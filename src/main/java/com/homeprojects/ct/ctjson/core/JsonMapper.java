@@ -1,6 +1,7 @@
 package com.homeprojects.ct.ctjson.core;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
@@ -40,6 +41,7 @@ public class JsonMapper {
 		deserializers = new HashMap<>();
 		deserializers.put(String.class, new StringDeserializer());
 		deserializers.put(Integer.class, new IntegerDeserializer());
+		deserializers.put(List.class, new ListDeserializer2());
 		
 //		arrayDeserializers = new HashMap<>();
 //		arrayDeserializers.put(List.class, new ListDeserializer());

@@ -143,22 +143,31 @@ public class PojoDeserializerGenerator {
 	}
 
 	private void setFieldNonPrimitive(Property property, CodeBlock.Builder builder, List<? extends TypeMirror> typeArguments) {
-		if (typeArguments.size() > 0) {
-			List<Integer> indices = getGenericIndices(typeArguments);
-			CodeBlock.Builder metadataBuilder = CodeBlock.builder()
-					.add("new $T($T.class, $S, ", RuntimeGenericTypeMetadata.class, property.getErasedType(), property.getErasedType());
-			indices.forEach(index -> metadataBuilder.add("metadata.getGeneric($L)", index));
-			metadataBuilder.add(")");
-			builder.add("mapper.deserialize(parser, $T.class, $L)", property.getErasedType(), metadataBuilder.build());
-		} else {
+		if (typeArguments.size() == 0) {
 			builder.add("mapper.deserialize(parser, $T.class)", property.getErasedType());
+			return;
 		}
+		List<Integer> indices = getGenericIndices(typeArguments);
+		CodeBlock.Builder metadataBuilder = CodeBlock.builder()
+				.add("new $T($T.class, $S, ", RuntimeGenericTypeMetadata.class, property.getErasedType(), property.getErasedType());
+//		indices.forEach(index -> metadataBuilder.add("metadata.getGeneric($L)", index));
+		for (int i = 0; i < indices.size(); i++) {
+			Integer index = indices.get(i);
+			if (index > -1) {
+				metadataBuilder.add("metadata.getGeneric($L)", index);
+			} else {
+				metadataBuilder.add("new $T($T.class, $S, metadata)", RuntimeGenericTypeMetadata.class, typeArguments.get(i), typeArguments.get(i));
+			}
+		}
+		metadataBuilder.add(")");
+		builder.add("mapper.deserialize(parser, $T.class, $L)", property.getErasedType(), metadataBuilder.build());
 	}
 
 	private List<Integer> getGenericIndices(List<? extends TypeMirror> typeArguments) {
 		List<Integer> indices = new ArrayList<>();
 
 		for (TypeMirror typeArgument : typeArguments) {
+			boolean added = false;
 			for (int i = 0; i < metadata.getElement().getTypeParameters().size(); i++) {
 				TypeParameterElement tp = metadata.getElement().getTypeParameters().get(i);
 				String typeName = tp.getSimpleName().toString();
@@ -166,6 +175,11 @@ public class PojoDeserializerGenerator {
 					continue;
 				}
 				indices.add(i);
+				added = true;
+				break;
+			}
+			if (!added) {
+				indices.add(-1);
 			}
 		}
 		return indices;
