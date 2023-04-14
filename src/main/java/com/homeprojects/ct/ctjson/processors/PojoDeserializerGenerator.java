@@ -130,11 +130,13 @@ public class PojoDeserializerGenerator {
 //			builder.add("getNextString()");
 		else if(kind.equals(TypeKind.TYPEVAR)) {
 //			System.out.println(propertyType);deserializeGenericObject
-			System.out.println(property.getField().getSimpleName().toString());
 			builder.add("mapper.deserialize(parser, metadata.getGeneric($S))", property.getField().asType().toString());
-		}
-		else {
-			builder.add("mapper.deserialize(parser, $T.class)", property.getField());
+//		} else if (((DeclaredType) propertyType).getTypeArguments().size() > 0) {
+//			builder.add("mapper.deserialize(parser, metadata.getGeneric($S))", property.getField().asType().toString());
+		} else {
+//			builder.add("mapper.deserialize(parser, $T.class)", property.getField());
+			builder.add("mapper.deserialize(parser, $T.class, $L)", property.getErasedType(), "metadata");
+
 //			CodeBlock.Builder argsBuilder = CodeBlock.builder();
 //			if(propertyType instanceof DeclaredType) {
 //				DeclaredType dclt = (DeclaredType) propertyType;

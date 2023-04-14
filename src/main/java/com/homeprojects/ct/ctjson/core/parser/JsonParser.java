@@ -24,25 +24,24 @@ public class JsonParser {
 			return startJsonObject(deserializer, metadata);
 		} 
 //		else if(c == '[') {
-//			return startJsonArray();
+//			startJsonArray(deserializer, metadata);
 //		}
 		
 		return null; // TODO throw exception
 	}
 
-//	private JsonElement startJsonArray() {
-//		JsonArray array = new JsonArray();
-//		
+//	private <T> void startJsonArray(Deserializer<T> deserializer, RuntimeGenericTypeMetadata metadata) {
+//		T array = deserializer.initialize();
 //		skipWhiteSpace();
 //		char c = getCharacter();
-//		
+//
 //		if(c != '[') {
 //			// TODO throw exception
 //		}
 //		i++;
-//		
+//
 //		c = getCharacter();
-//		
+//
 //		while(c != ']' && i < json.length()) {
 //			JsonElement element = getJsonElement();
 //			array.addElement(element);
@@ -52,7 +51,7 @@ public class JsonParser {
 //		i++;
 //		return array;
 //	}
-//
+
 //	private JsonElement getJsonElement() {
 //		skipWhiteSpace();
 //		char c = getCharacter();

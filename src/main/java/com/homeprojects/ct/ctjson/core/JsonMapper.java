@@ -102,6 +102,11 @@ public class JsonMapper {
 		return (R) deserializer.deserialize(parser);
 	}
 
+	public <R> R deserialize(JsonParser parser, Class<R> clazz, RuntimeGenericTypeMetadata metadata) {
+		Deserializer deserializer = deserializers.get(clazz);
+		return (R) deserializer.deserialize(parser, metadata);
+	}
+
 	public <R> R deserialize(String json, String parameterizedTypeKey) {
 		RuntimeGenericTypeMetadata metadata = manager.getMetadata(parameterizedTypeKey);
 		Deserializer deserializer = deserializers.get(metadata.getClazz());
