@@ -150,9 +150,11 @@ public class PojoDeserializerGenerator {
 		List<Integer> indices = getGenericIndices(typeArguments);
 		CodeBlock.Builder metadataBuilder = CodeBlock.builder()
 				.add("new $T($T.class, $S, ", RuntimeGenericTypeMetadata.class, property.getErasedType(), property.getErasedType());
-//		indices.forEach(index -> metadataBuilder.add("metadata.getGeneric($L)", index));
 		for (int i = 0; i < indices.size(); i++) {
 			Integer index = indices.get(i);
+			if (i > 0) {
+				metadataBuilder.add(", ");
+			}
 			if (index > -1) {
 				metadataBuilder.add("metadata.getGeneric($L)", index);
 			} else {
