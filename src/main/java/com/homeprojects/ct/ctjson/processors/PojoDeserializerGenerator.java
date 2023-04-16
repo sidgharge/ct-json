@@ -16,8 +16,6 @@ import javax.lang.model.type.TypeMirror;
 import com.homeprojects.ct.ctjson.PojoMetadata;
 import com.homeprojects.ct.ctjson.Property;
 import com.homeprojects.ct.ctjson.annotations.GeneratedDeserialzer;
-import com.homeprojects.ct.ctjson.core.JsonElement;
-import com.homeprojects.ct.ctjson.core.JsonNode;
 import com.homeprojects.ct.ctjson.core.RuntimeGenericTypeMetadata;
 import com.homeprojects.ct.ctjson.core.deserializer.AbstractDeserializer;
 import com.homeprojects.ct.ctjson.core.parser.JsonParser;
@@ -47,11 +45,7 @@ public class PojoDeserializerGenerator {
 				classBuilder(className)
 				.addAnnotation(GeneratedDeserialzer.class)
 				.addModifiers(Modifier.PUBLIC)
-				//.addSuperinterface(getSuperInterface())
 				.superclass(getSuperClass())
-//				.addField(getMapperField())
-//				.addMethod(getConstructor())
-				//.addMethod(getDeserializeMethod())
 				.addMethod(getGetTypeMethod())
 				.addMethod(getInitializeMethod())
 				.addMethod(getSetValueMethod());
@@ -90,7 +84,6 @@ public class PojoDeserializerGenerator {
 	
 	private MethodSpec getSetValueMethod() {
 		TypeName type = TypeName.get(metadata.getErasedType());
-//		T object, String fieldName, Object value, JsonParser parser
 		return MethodSpec.methodBuilder("setValue")
 			.addAnnotation(Override.class)
 			.addModifiers(Modifier.PUBLIC)
@@ -114,7 +107,6 @@ public class PojoDeserializerGenerator {
 			builder.addStatement("break");
 		}
 		builder.add("default:\n");
-//		builder.addStatement("parser.skipValue()");
 		builder.addStatement("break");
 		builder.endControlFlow();
 		
@@ -127,14 +119,9 @@ public class PojoDeserializerGenerator {
 		System.out.println("FieldType: " + propertyType + ":::" + propertyType.getKind());
 		TypeKind kind = propertyType.getKind();
 		if(kind.isPrimitive()) {
-			builder.add(getPrimitiveCode(property, kind));
+			builder.add(getPrimitiveCode(kind));
 		} else if(kind.equals(TypeKind.TYPEVAR)) {
-//			builder.add("mapper.deserialize(parser, metadata.getGeneric($S))", property.getField().asType().toString());
 			List<Integer> indices = getGenericIndices(Arrays.asList(propertyType));
-//			CodeBlock.Builder metadataBuilder = CodeBlock.builder()
-//					.add("new $T($T.class, $S, ", RuntimeGenericTypeMetadata.class, property.getErasedType(), property.getErasedType());
-//			indices.forEach(index -> metadataBuilder.add("metadata.getGeneric($L)", index));
-//			metadataBuilder.add(")");
 			builder.add("mapper.deserialize(parser, metadata.getGeneric($L))", indices.get(0));
 		} else {
 			setFieldNonPrimitive(property, builder, ((DeclaredType) propertyType).getTypeArguments());
@@ -187,7 +174,7 @@ public class PojoDeserializerGenerator {
 		return indices;
 	}
 
-	private CodeBlock getPrimitiveCode(Property property, TypeKind kind) {
+	private CodeBlock getPrimitiveCode(TypeKind kind) {
 		switch (kind) {
 		case INT:
 			return CodeBlock.of("parser.toInt(parser.getNextNumber())");
@@ -206,50 +193,8 @@ public class PojoDeserializerGenerator {
 		}
 	}
 
-
 	private String getPackage() {
 		return ((PackageElement)metadata.getElement().getEnclosingElement()).getQualifiedName().toString();
-	}
-
-	private CodeBlock getConstructorBody() {
-		return CodeBlock.builder()
-			.addStatement("this.mapper = mapper")
-			.addStatement("mapper.registerDeserializer($T.class, this)", metadata.getElement())
-			.build();
-	}
-
-	private MethodSpec getDeserializeMethod() {
-		return MethodSpec.methodBuilder("deserialize")
-			.addAnnotation(Override.class)
-			.addModifiers(Modifier.PUBLIC)
-			.returns(TypeName.get(metadata.getElement().asType()))
-			.addParameter(ParameterSpec.builder(JsonElement.class, "element").build())
-			.addCode(getDeserializeMethodBody())
-			.build();
-	}
-
-	private CodeBlock getDeserializeMethodBody() {
-		CodeBlock.Builder builder = CodeBlock.builder();
-//		if(metadata.isIterable()) {
-////			handleIterableType(builder);
-//			return builder.build();
-//		}
-		builder.addStatement("$T node = (JsonNode) element", JsonNode.class);
-		builder.addStatement("$T object = new $T()", metadata.getElement(), metadata.getElement());
-		
-		for (Property property: metadata.getProperties()) {
-			TypeKind kind = property.getField().asType().getKind();
-			if(kind.isPrimitive()) {
-				builder.addStatement(getPrimitiveDeserializeStatement(property, kind));
-			} else if (property.isIterable()) {
-				handleIterableProperty(property, builder);
-			} else {
-				String propertyName = property.getField().getSimpleName().toString();
-				builder.addStatement("object.$L(mapper.deserialize(node.getValue($S), $T.class))", property.getSetterMethodName(), propertyName, property.getField());
-			}
-		}
-		builder.addStatement("return object");
-		return builder.build();
 	}
 
 	private void handleIterableProperty(Property property, CodeBlock.Builder builder) {
